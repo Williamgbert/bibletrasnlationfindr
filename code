@@ -1,0 +1,703 @@
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, ChevronLeft, BookOpen, Heart, User, Settings, Award, Info, RefreshCw } from 'lucide-react';
+
+const BibleTranslationFinder = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const [results, setResults] = useState([]);
+
+  // Translation database with scoring weights
+  const translations = {
+    NIV: {
+      name: "New International Version (NIV)",
+      style: "Contemporary",
+      approach: "Balanced",
+      readingLevel: 7.8,
+      strengths: "Clear, everyday language with scholarly accuracy",
+      idealFor: "Daily devotions, personal study, new believers",
+      features: "Extensive cross-references, study notes available",
+      scores: {
+        devotions: 9, study: 8, firstTime: 9, teaching: 8, memorizing: 7, comparative: 6,
+        contemporary: 9, simple: 8, newReader: 9, casual: 8, modern: 9,
+        thoughtForThought: 8, interpretive: 7, footnotes: 7,
+        digital: 8, free: 6, tools: 8, compact: 7,
+        home: 8, commute: 7, church: 8, group: 8,
+        print: 7, digitalApp: 8, audio: 7, mixed: 8,
+        rhythm: 7, imagery: 8, simplicity: 8, traditional: 6
+      }
+    },
+    NLT: {
+      name: "New Living Translation (NLT)",
+      style: "Contemporary",
+      approach: "Dynamic",
+      readingLevel: 6.3,
+      strengths: "Very readable, natural English flow",
+      idealFor: "New believers, family devotions, easy reading",
+      features: "Study notes, life application helps",
+      scores: {
+        devotions: 9, study: 6, firstTime: 10, teaching: 7, memorizing: 8, comparative: 5,
+        contemporary: 10, simple: 10, newReader: 10, casual: 9, modern: 10,
+        thoughtForThought: 9, interpretive: 8, footnotes: 6,
+        digital: 8, free: 7, tools: 7, compact: 8,
+        home: 8, commute: 9, church: 7, group: 7,
+        print: 6, digitalApp: 9, audio: 9, mixed: 8,
+        rhythm: 8, imagery: 9, simplicity: 10, traditional: 5
+      }
+    },
+    ESV: {
+      name: "English Standard Version (ESV)",
+      style: "Formal Contemporary",
+      approach: "Literal",
+      readingLevel: 10.0,
+      strengths: "Word-for-word accuracy with readable English",
+      idealFor: "Serious study, teaching, memorization",
+      features: "Extensive cross-references, theological precision",
+      scores: {
+        devotions: 7, study: 10, firstTime: 6, teaching: 9, memorizing: 9, comparative: 9,
+        contemporary: 6, simple: 5, newReader: 5, casual: 6, modern: 6,
+        thoughtForThought: 4, interpretive: 4, footnotes: 9,
+        digital: 8, free: 8, tools: 9, compact: 7,
+        home: 9, commute: 7, church: 8, group: 9,
+        print: 8, digitalApp: 8, audio: 6, mixed: 8,
+        rhythm: 8, imagery: 7, simplicity: 6, traditional: 8
+      }
+    },
+    CSB: {
+      name: "Christian Standard Bible (CSB)",
+      style: "Contemporary",
+      approach: "Balanced",
+      readingLevel: 8.2,
+      strengths: "Optimal blend of accuracy and clarity",
+      idealFor: "Study, teaching, personal reading",
+      features: "Balanced translation philosophy, extensive notes",
+      scores: {
+        devotions: 8, study: 9, firstTime: 8, teaching: 9, memorizing: 8, comparative: 8,
+        contemporary: 8, simple: 7, newReader: 7, casual: 7, modern: 8,
+        thoughtForThought: 7, interpretive: 6, footnotes: 8,
+        digital: 8, free: 7, tools: 8, compact: 7,
+        home: 8, commute: 7, church: 9, group: 9,
+        print: 7, digitalApp: 8, audio: 7, mixed: 8,
+        rhythm: 7, imagery: 7, simplicity: 7, traditional: 7
+      }
+    },
+    NASB: {
+      name: "New American Standard Bible (NASB)",
+      style: "Formal",
+      approach: "Literal",
+      readingLevel: 11.0,
+      strengths: "Most word-for-word accurate translation",
+      idealFor: "Detailed study, cross-referencing, research",
+      features: "Extensive footnotes, textual variants noted",
+      scores: {
+        devotions: 5, study: 10, firstTime: 4, teaching: 8, memorizing: 7, comparative: 10,
+        contemporary: 3, simple: 3, newReader: 3, casual: 4, modern: 3,
+        thoughtForThought: 2, interpretive: 2, footnotes: 10,
+        digital: 7, free: 6, tools: 9, compact: 6,
+        home: 9, commute: 6, church: 8, group: 8,
+        print: 9, digitalApp: 7, audio: 5, mixed: 7,
+        rhythm: 7, imagery: 6, simplicity: 4, traditional: 9
+      }
+    },
+    NKJV: {
+      name: "New King James Version (NKJV)",
+      style: "Traditional",
+      approach: "Literal",
+      readingLevel: 9.0,
+      strengths: "Traditional language with modern updates",
+      idealFor: "Those who love classic biblical language",
+      features: "Traditional reverent tone, extensive cross-references",
+      scores: {
+        devotions: 7, study: 8, firstTime: 6, teaching: 7, memorizing: 8, comparative: 8,
+        contemporary: 4, simple: 5, newReader: 5, casual: 6, modern: 4,
+        thoughtForThought: 5, interpretive: 4, footnotes: 7,
+        digital: 7, free: 7, tools: 7, compact: 7,
+        home: 8, commute: 7, church: 7, group: 7,
+        print: 8, digitalApp: 7, audio: 7, mixed: 8,
+        rhythm: 8, imagery: 7, simplicity: 6, traditional: 9
+      }
+    },
+    NET: {
+      name: "New English Translation (NET)",
+      style: "Contemporary",
+      approach: "Balanced",
+      readingLevel: 8.5,
+      strengths: "Extensive translator notes and explanations",
+      idealFor: "Serious students, comparative study",
+      features: "Over 60,000 translator notes, free online",
+      scores: {
+        devotions: 6, study: 10, firstTime: 6, teaching: 8, memorizing: 6, comparative: 10,
+        contemporary: 7, simple: 6, newReader: 6, casual: 5, modern: 7,
+        thoughtForThought: 7, interpretive: 6, footnotes: 10,
+        digital: 10, free: 10, tools: 10, compact: 5,
+        home: 8, commute: 8, church: 7, group: 8,
+        print: 6, digitalApp: 10, audio: 7, mixed: 8,
+        rhythm: 6, imagery: 7, simplicity: 7, traditional: 4
+      }
+    },
+    MSG: {
+      name: "The Message (MSG)",
+      style: "Paraphrase",
+      approach: "Dynamic",
+      readingLevel: 4.5,
+      strengths: "Contemporary paraphrase, fresh perspective",
+      idealFor: "Devotional reading, fresh insights",
+      features: "Modern language, cultural relevance",
+      scores: {
+        devotions: 8, study: 3, firstTime: 7, teaching: 4, memorizing: 3, comparative: 4,
+        contemporary: 10, simple: 10, newReader: 8, casual: 10, modern: 10,
+        thoughtForThought: 10, interpretive: 10, footnotes: 2,
+        digital: 7, free: 6, tools: 4, compact: 8,
+        home: 7, commute: 9, church: 6, group: 7,
+        print: 5, digitalApp: 8, audio: 9, mixed: 7,
+        rhythm: 9, imagery: 10, simplicity: 9, traditional: 6
+      }
+    }
+  };
+
+  const questions = [
+    {
+      id: 'primaryGoal',
+      title: "What's your main goal for Bible reading?",
+      subtitle: "This helps us understand how you'll primarily use your Bible.",
+      icon: <Heart className="w-6 h-6" />,
+      type: 'single',
+      tier: 1,
+      options: [
+        { value: 'devotions', label: 'Daily devotions and personal growth', description: 'Quiet time, prayer, and personal reflection' },
+        { value: 'study', label: 'In-depth study and research', description: 'Deep dives into Scripture, theology, and context' },
+        { value: 'firstTime', label: 'Reading through the Bible for the first time', description: 'Getting familiar with the overall story' },
+        { value: 'teaching', label: 'Teaching or leading small groups', description: 'Preparing lessons and leading discussions' },
+        { value: 'memorizing', label: 'Memorizing verses', description: 'Committing Scripture to memory' },
+        { value: 'comparative', label: 'Comparative study across translations', description: 'Comparing different versions for deeper understanding' }
+      ]
+    },
+    {
+      id: 'languageStyle',
+      title: "How do you prefer language to sound?",
+      subtitle: "Think about reading a letter from someone you care about.",
+      icon: <User className="w-6 h-6" />,
+      type: 'single',
+      tier: 2,
+      options: [
+        { value: 'contemporary', label: 'Like they\'re sitting across from you having coffee', description: 'Natural, everyday language' },
+        { value: 'traditional', label: 'Like a beautiful, timeless letter you\'d treasure forever', description: 'More formal, reverent language' },
+        { value: 'mixed', label: 'I appreciate both styles', description: 'Open to either approach' }
+      ]
+    },
+    {
+      id: 'readingExperience',
+      title: "How familiar are you with the Bible?",
+      subtitle: "There's no wrong answer - we just want to match you well!",
+      icon: <BookOpen className="w-6 h-6" />,
+      type: 'single',
+      tier: 2,
+      options: [
+        { value: 'newReader', label: 'Pretty new to Bible reading', description: 'Just starting my journey with Scripture' },
+        { value: 'familiar', label: 'I know some stories and verses', description: 'Have some background but want to grow' },
+        { value: 'experienced', label: 'I\'ve read through much of the Bible', description: 'Comfortable with biblical language and concepts' }
+      ]
+    },
+    {
+      id: 'readingComplexity',
+      title: "When you read for enjoyment, what do you prefer?",
+      subtitle: "This helps us match the reading level that feels natural to you.",
+      icon: <BookOpen className="w-6 h-6" />,
+      type: 'single',
+      tier: 2,
+      options: [
+        { value: 'simple', label: 'Clear, straightforward language', description: 'Easy to understand without losing meaning' },
+        { value: 'moderate', label: 'A mix of simple and rich language', description: 'Some complexity but still accessible' },
+        { value: 'complex', label: 'Rich, literary language', description: 'Appreciate depth and nuanced expression' }
+      ]
+    },
+    {
+      id: 'studyApproach',
+      title: "How do you typically approach reading?",
+      subtitle: "Understanding your style helps us recommend the right fit.",
+      icon: <Settings className="w-6 h-6" />,
+      type: 'single',
+      tier: 3,
+      options: [
+        { value: 'casual', label: 'I like to read and let it speak to me', description: 'Focus on the overall message and feeling' },
+        { value: 'analytical', label: 'I enjoy examining details and nuances', description: 'Like to dig deeper into word choices and meanings' },
+        { value: 'balanced', label: 'Both, depending on my mood and time', description: 'Sometimes casual, sometimes more detailed' }
+      ]
+    },
+    {
+      id: 'translationPhilosophy',
+      title: "When reading a book translated from another language, would you prefer:",
+      subtitle: "This helps us understand your translation preference without the jargon!",
+      icon: <Award className="w-6 h-6" />,
+      type: 'single',
+      tier: 3,
+      options: [
+        { value: 'thoughtForThought', label: 'The ideas expressed in natural English', description: 'Focus on clear communication of the message' },
+        { value: 'wordForWord', label: 'Staying as close as possible to the original words', description: 'Preserve the exact structure and word choices' },
+        { value: 'balanced', label: 'A good balance of both approaches', description: 'Accurate but readable' }
+      ]
+    },
+    {
+      id: 'studyHelps',
+      title: "How important are study helps to you?",
+      subtitle: "Things like footnotes, cross-references, and explanatory notes.",
+      icon: <Info className="w-6 h-6" />,
+      type: 'single',
+      tier: 3,
+      options: [
+        { value: 'minimal', label: 'I prefer just the text', description: 'Want to focus on Scripture itself' },
+        { value: 'moderate', label: 'Some helps are nice to have', description: 'Occasional explanations and references' },
+        { value: 'extensive', label: 'I love detailed notes and explanations', description: 'Want comprehensive study resources' }
+      ]
+    },
+    {
+      id: 'readingContext',
+      title: "Where do you typically read the Bible?",
+      subtitle: "Understanding your reading environment helps us recommend the best format.",
+      icon: <BookOpen className="w-6 h-6" />,
+      type: 'single',
+      tier: 4,
+      options: [
+        { value: 'home', label: 'At home during quiet time', description: 'Comfortable setting with good lighting' },
+        { value: 'commute', label: 'On the go - commuting or traveling', description: 'Need something portable and accessible' },
+        { value: 'church', label: 'Primarily at church services', description: 'Following along during worship and teaching' },
+        { value: 'group', label: 'In small groups or Bible studies', description: 'Discussing with others, need clear text for sharing' }
+      ]
+    },
+    {
+      id: 'digitalPreference',
+      title: "How do you prefer to access your Bible?",
+      subtitle: "Different translations work better in different formats.",
+      icon: <Settings className="w-6 h-6" />,
+      type: 'single',
+      tier: 4,
+      options: [
+        { value: 'print', label: 'Physical book - I love turning pages', description: 'Traditional printed Bible experience' },
+        { value: 'digital', label: 'Phone or tablet app', description: 'Convenient and always with me' },
+        { value: 'audio', label: 'Listening while doing other activities', description: 'Audio Bible for multitasking' },
+        { value: 'mixed', label: 'Different formats for different times', description: 'Use whatever works best in the moment' }
+      ]
+    },
+    {
+      id: 'memorizationStyle',
+      title: "When you memorize things, what helps you most?",
+      subtitle: "This helps us recommend translations with memorable phrasing.",
+      icon: <Heart className="w-6 h-6" />,
+      type: 'single',
+      tier: 2,
+      options: [
+        { value: 'rhythm', label: 'Rhythm and flow of the words', description: 'Natural cadence makes it stick' },
+        { value: 'imagery', label: 'Vivid, concrete word pictures', description: 'Clear mental images help me remember' },
+        { value: 'simplicity', label: 'Simple, straightforward language', description: 'Fewer complex words to remember' },
+        { value: 'traditional', label: 'Classic, familiar phrasing', description: 'Traditional language feels more memorable' }
+      ]
+    }
+  ];
+
+  const calculateRecommendations = () => {
+    const scores = {};
+    
+    // Initialize scores for all translations
+    Object.keys(translations).forEach(key => {
+      scores[key] = 0;
+    });
+
+    // Tier 1: Primary Use Case (40% weight)
+    if (answers.primaryGoal) {
+      Object.keys(translations).forEach(key => {
+        scores[key] += (translations[key].scores[answers.primaryGoal] || 5) * 0.4;
+      });
+    }
+
+    // Tier 2: Reading Preferences (30% weight total)
+    const tier2Weight = 0.3 / 4; // Split among 4 tier-2 questions
+
+    if (answers.languageStyle) {
+      const styleMap = {
+        contemporary: 'contemporary',
+        traditional: 'contemporary', // Inverse scoring
+        mixed: null // No preference
+      };
+      const styleKey = styleMap[answers.languageStyle];
+      
+      Object.keys(translations).forEach(key => {
+        if (styleKey === 'contemporary') {
+          scores[key] += (translations[key].scores.contemporary || 5) * tier2Weight;
+        } else if (answers.languageStyle === 'traditional') {
+          scores[key] += (10 - (translations[key].scores.contemporary || 5)) * tier2Weight;
+        } else {
+          scores[key] += 5 * tier2Weight; // Neutral for mixed preference
+        }
+      });
+    }
+
+    // Tier 4: Practical Considerations (10% weight total)
+    const tier4Weight = 0.1 / 2;
+
+    if (answers.readingContext) {
+      Object.keys(translations).forEach(key => {
+        scores[key] += (translations[key].scores[answers.readingContext] || 5) * tier4Weight;
+      });
+    }
+
+    if (answers.digitalPreference) {
+      const prefMap = {
+        print: 'print',
+        digital: 'digitalApp',
+        audio: 'audio',
+        mixed: 'mixed'
+      };
+      const prefKey = prefMap[answers.digitalPreference];
+      
+      Object.keys(translations).forEach(key => {
+        scores[key] += (translations[key].scores[prefKey] || 5) * tier4Weight;
+      });
+    }
+
+    if (answers.readingExperience) {
+      const expMap = {
+        newReader: 'newReader',
+        familiar: null,
+        experienced: 'newReader' // Inverse scoring
+      };
+      const expKey = expMap[answers.readingExperience];
+      
+      Object.keys(translations).forEach(key => {
+        if (expKey === 'newReader') {
+          scores[key] += (translations[key].scores.newReader || 5) * tier2Weight;
+        } else if (answers.readingExperience === 'experienced') {
+          scores[key] += (10 - (translations[key].scores.newReader || 5)) * tier2Weight;
+        } else {
+          scores[key] += 5 * tier2Weight; // Neutral for familiar
+        }
+      });
+    }
+
+    if (answers.readingComplexity) {
+      const complexMap = {
+        simple: 'simple',
+        moderate: null,
+        complex: 'simple' // Inverse scoring
+      };
+      const complexKey = complexMap[answers.readingComplexity];
+      
+      Object.keys(translations).forEach(key => {
+        if (complexKey === 'simple') {
+          scores[key] += (translations[key].scores.simple || 5) * tier2Weight;
+        } else if (answers.readingComplexity === 'complex') {
+          scores[key] += (10 - (translations[key].scores.simple || 5)) * tier2Weight;
+        } else {
+          scores[key] += 5 * tier2Weight; // Neutral for moderate
+        }
+      });
+    }
+
+    if (answers.memorizationStyle) {
+      Object.keys(translations).forEach(key => {
+        scores[key] += (translations[key].scores[answers.memorizationStyle] || 5) * tier2Weight;
+      });
+    }
+
+    // Tier 3: Theological Considerations (20% weight total)
+    const tier3Weight = 0.2 / 3;
+
+    if (answers.studyApproach) {
+      const approachMap = {
+        casual: 'casual',
+        analytical: 'casual', // Inverse scoring
+        balanced: null
+      };
+      const approachKey = approachMap[answers.studyApproach];
+      
+      Object.keys(translations).forEach(key => {
+        if (approachKey === 'casual') {
+          scores[key] += (translations[key].scores.casual || 5) * tier3Weight;
+        } else if (answers.studyApproach === 'analytical') {
+          scores[key] += (10 - (translations[key].scores.casual || 5)) * tier3Weight;
+        } else {
+          scores[key] += 5 * tier3Weight;
+        }
+      });
+    }
+
+    if (answers.translationPhilosophy) {
+      const philMap = {
+        thoughtForThought: 'thoughtForThought',
+        wordForWord: 'thoughtForThought', // Inverse scoring
+        balanced: null
+      };
+      const philKey = philMap[answers.translationPhilosophy];
+      
+      Object.keys(translations).forEach(key => {
+        if (philKey === 'thoughtForThought') {
+          scores[key] += (translations[key].scores.thoughtForThought || 5) * tier3Weight;
+        } else if (answers.translationPhilosophy === 'wordForWord') {
+          scores[key] += (10 - (translations[key].scores.thoughtForThought || 5)) * tier3Weight;
+        } else {
+          scores[key] += 5 * tier3Weight;
+        }
+      });
+    }
+
+    if (answers.studyHelps) {
+      const helpsMap = {
+        minimal: 'footnotes', // Inverse scoring
+        moderate: null,
+        extensive: 'footnotes'
+      };
+      const helpsKey = helpsMap[answers.studyHelps];
+      
+      Object.keys(translations).forEach(key => {
+        if (helpsKey === 'footnotes' && answers.studyHelps === 'extensive') {
+          scores[key] += (translations[key].scores.footnotes || 5) * tier3Weight;
+        } else if (answers.studyHelps === 'minimal') {
+          scores[key] += (10 - (translations[key].scores.footnotes || 5)) * tier3Weight;
+        } else {
+          scores[key] += 5 * tier3Weight;
+        }
+      });
+    }
+
+    // Sort translations by score
+    const sortedTranslations = Object.keys(scores)
+      .map(key => ({
+        key,
+        ...translations[key],
+        score: scores[key]
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    return sortedTranslations;
+  };
+
+  const handleAnswer = (questionId, value) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
+  };
+
+  const nextStep = () => {
+    if (currentStep < questions.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      const recommendations = calculateRecommendations();
+      setResults(recommendations);
+      setShowResults(true);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const restart = () => {
+    setCurrentStep(0);
+    setAnswers({});
+    setShowResults(false);
+    setResults([]);
+  };
+
+  const getConfidenceLevel = (index, score) => {
+    if (index === 0 && score >= 7) return "Great match!";
+    if (index === 0 && score >= 6) return "Good option";
+    if (index < 2 && score >= 5.5) return "Worth considering";
+    return "Alternative option";
+  };
+
+  if (showResults) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <Award className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Perfect Bible Match!</h1>
+            <p className="text-gray-600">Based on your preferences, here are our top recommendations for you:</p>
+          </div>
+
+          <div className="space-y-6">
+            {results.map((translation, index) => (
+              <div key={translation.key} className={`p-6 rounded-lg border-2 ${
+                index === 0 ? 'border-indigo-300 bg-indigo-50' : 
+                index === 1 ? 'border-blue-300 bg-blue-50' : 
+                'border-gray-300 bg-gray-50'
+              }`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-800">{translation.name}</h3>
+                    <p className={`text-sm font-medium ${
+                      index === 0 ? 'text-indigo-600' : 
+                      index === 1 ? 'text-blue-600' : 
+                      'text-gray-600'
+                    }`}>
+                      {getConfidenceLevel(index, translation.score)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Reading Level</div>
+                    <div className="font-semibold">{translation.readingLevel} grade</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-1">What makes it special:</h4>
+                    <p className="text-gray-600">{translation.strengths}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-1">Perfect for:</h4>
+                    <p className="text-gray-600">{translation.idealFor}</p>
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-700 mb-2">Sample: John 3:16</h4>
+                  <p className="text-gray-800 italic">
+                    {translation.key === 'NIV' && "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life."}
+                    {translation.key === 'NLT' && "For this is how God loved the world: He gave his one and only Son, so that everyone who believes in him will not perish but have eternal life."}
+                    {translation.key === 'ESV' && "For God so loved the world, that he gave his only Son, that whoever believes in him should not perish but have eternal life."}
+                    {translation.key === 'CSB' && "For God loved the world in this way: He gave his one and only Son, so that everyone who believes in him will not perish but have eternal life."}
+                    {translation.key === 'NASB' && "For God so loved the world, that He gave His only begotten Son, that whoever believes in Him shall not perish, but have eternal life."}
+                    {translation.key === 'NKJV' && "For God so loved the world that He gave His only begotten Son, that whoever believes in Him should not perish but have everlasting life."}
+                    {translation.key === 'NET' && "For this is the way God loved the world: He gave his one and only Son, so that everyone who believes in him will not perish but have eternal life."}
+                    {translation.key === 'MSG' && "This is how much God loved the world: He gave his Son, his one and only Son. And this is why: so that no one need be destroyed; by believing in him, anyone can have a whole and lasting life."}
+                  </p>
+                </div>
+
+                {index === 0 && (
+                  <div className="mt-4 p-4 bg-indigo-100 rounded-lg">
+                    <h4 className="font-semibold text-indigo-800 mb-2">Why this is our top recommendation for you:</h4>
+                    <p className="text-indigo-700">
+                      Based on your desire for {answers.primaryGoal?.replace(/([A-Z])/g, ' $1').toLowerCase()} and your preference for {answers.languageStyle} language, 
+                      the {translation.name} offers the perfect balance of {translation.approach.toLowerCase()} translation approach with {translation.style.toLowerCase()} language style.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-yellow-800 text-sm">
+                <strong>Remember:</strong> The Holy Spirit can work through any faithful translation! 
+                These recommendations are based on your preferences, but trust God to speak to you through His Word.
+              </p>
+            </div>
+            
+            <button
+              onClick={restart}
+              className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Take the Quiz Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentQuestion = questions[currentStep];
+  const progress = ((currentStep + 1) / questions.length) * 100;
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+      <div className="bg-white rounded-xl shadow-lg p-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <BookOpen className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Find Your Perfect Bible Translation</h1>
+          <p className="text-gray-600">
+            Finding the right Bible translation is like finding the perfect pair of glasses – when it's right, everything becomes clearer!
+          </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">Question {currentStep + 1} of {questions.length}</span>
+            <span className="text-sm font-medium text-gray-700">{Math.round(progress)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Question */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4">
+            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+              {currentQuestion.icon}
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">{currentQuestion.title}</h2>
+              <p className="text-gray-600 text-sm">{currentQuestion.subtitle}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {currentQuestion.options.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleAnswer(currentQuestion.id, option.value)}
+                className={`w-full p-4 text-left rounded-lg border-2 transition-colors ${
+                  answers[currentQuestion.id] === option.value
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-25'
+                }`}
+              >
+                <div className="font-medium text-gray-800">{option.label}</div>
+                <div className="text-sm text-gray-600 mt-1">{option.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between">
+          <button
+            onClick={prevStep}
+            disabled={currentStep === 0}
+            className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors ${
+              currentStep === 0
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-indigo-600 hover:bg-indigo-50'
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Previous
+          </button>
+
+          <button
+            onClick={nextStep}
+            disabled={!answers[currentQuestion.id]}
+            className={`inline-flex items-center px-6 py-2 rounded-lg transition-colors ${
+              answers[currentQuestion.id]
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {currentStep === questions.length - 1 ? 'Get My Recommendations' : 'Next'}
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </button>
+        </div>
+
+        {/* Skip option */}
+        <div className="text-center mt-4">
+          <button
+            onClick={nextStep}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Not sure? Skip this question
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BibleTranslationFinder;
